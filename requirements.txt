@@ -1,0 +1,6 @@
+# 复现提交结果所需的最小依赖（Linux，Python 3.8.20 上测试）。
+# 用法见 README“运行”第 1、2 步：参数文件 + 检测/颜色缓存，或 ONNX 模型推理。
+numpy==1.24.4
+opencv-python>=4.5,<5      # 测试时为 cv2 4.11.0
+Pillow==10.4.0
+onnxruntime==1.16.3

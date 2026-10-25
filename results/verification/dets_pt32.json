@@ -1,0 +1,16 @@
+{
+ "images": 300,
+ "images_identical": 0,
+ "boxes_a": 12510,
+ "boxes_b": 12388,
+ "matched": 12289,
+ "unmatched_conf>=0.25_a": 21,
+ "unmatched_conf>=0.25_b": 6,
+ "iou_mean": 0.972930924787834,
+ "iou_p1": 0.8646626103198047,
+ "iou_p5": 0.9090938678290474,
+ "max_abs_coord_px_median": 0.40000000000009095,
+ "max_abs_coord_px_p99": 1.4700000000000273,
+ "abs_conf_median": 0.00039999999999995595,
+ "abs_conf_p99": 0.0048000000000000265
+}

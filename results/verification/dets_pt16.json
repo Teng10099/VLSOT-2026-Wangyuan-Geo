@@ -1,0 +1,16 @@
+{
+ "images": 300,
+ "images_identical": 300,
+ "boxes_a": 12510,
+ "boxes_b": 12510,
+ "matched": 12510,
+ "unmatched_conf>=0.25_a": 0,
+ "unmatched_conf>=0.25_b": 0,
+ "iou_mean": 1.0,
+ "iou_p1": 1.0,
+ "iou_p5": 1.0,
+ "max_abs_coord_px_median": 0.0,
+ "max_abs_coord_px_p99": 0.0,
+ "abs_conf_median": 0.0,
+ "abs_conf_p99": 0.0
+}

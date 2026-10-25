@@ -1,0 +1,8 @@
+Tenn-VLSOT-Geo
+Copyright 2026 望远队 (Team Wangyuan), Chang'an University
+
+This repository is an entry of the 2026 VLP Challenge (2026 VLP 挑战赛参赛作品), Track A: VLSOT.
+The source code in this repository is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party models, libraries and data used by this code are NOT covered by this licence and are
+not included in this repository. See THIRD_PARTY_NOTICES.md for their sources and licences.

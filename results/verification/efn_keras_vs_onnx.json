@@ -1,0 +1,8 @@
+{
+ "images": 120,
+ "boxes_compared": 3396,
+ "argmax_agree": 3396,
+ "max_abs_prob_median": 3.758072853088379e-05,
+ "max_abs_prob_p99": 0.00021208822727203375,
+ "max_abs_prob_max": 0.00043044984340667725
+}

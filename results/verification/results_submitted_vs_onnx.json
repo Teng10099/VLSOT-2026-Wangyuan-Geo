@@ -1,0 +1,86 @@
+{
+ "files": 10,
+ "identical_files": 0,
+ "per_clip": [
+  {
+   "vid": "000237",
+   "identical": false,
+   "max_abs_lwh": 0.0,
+   "max_abs_xyz": 0.0015999999999999903,
+   "mean_center_dist": 0.0018357559750685787,
+   "min_sel_iou": 0.9933568025041897
+  },
+  {
+   "vid": "001483",
+   "identical": false,
+   "max_abs_lwh": 0.0,
+   "max_abs_xyz": 0.0031000000000001027,
+   "mean_center_dist": 0.0031032241298366687,
+   "min_sel_iou": 0.9901132893607744
+  },
+  {
+   "vid": "003235",
+   "identical": false,
+   "max_abs_lwh": 0.0,
+   "max_abs_xyz": 0.001700000000000479,
+   "mean_center_dist": 0.0023727621035413205,
+   "min_sel_iou": 0.9964288448216437
+  },
+  {
+   "vid": "006543",
+   "identical": false,
+   "max_abs_lwh": 0.0,
+   "max_abs_xyz": 0.00030000000000002247,
+   "mean_center_dist": 0.00042426406871192096,
+   "min_sel_iou": 0.9915005862324536
+  },
+  {
+   "vid": "024386",
+   "identical": false,
+   "max_abs_lwh": 0.0,
+   "max_abs_xyz": 0.016000000000000014,
+   "mean_center_dist": 0.005601549823034769,
+   "min_sel_iou": 0.9855326972827403
+  },
+  {
+   "vid": "033447",
+   "identical": false,
+   "max_abs_lwh": 0.0,
+   "max_abs_xyz": 0.0038000000000000256,
+   "mean_center_dist": 0.00280062572132499,
+   "min_sel_iou": 0.9890247597903867
+  },
+  {
+   "vid": "035729",
+   "identical": false,
+   "max_abs_lwh": 0.0,
+   "max_abs_xyz": 0.000700000000000145,
+   "mean_center_dist": 0.001009950493836943,
+   "min_sel_iou": 0.9919498356314889
+  },
+  {
+   "vid": "036120",
+   "identical": false,
+   "max_abs_lwh": 0.0,
+   "max_abs_xyz": 0.0037000000000002586,
+   "mean_center_dist": 0.0037966674716274676,
+   "min_sel_iou": 0.991712045454931
+  },
+  {
+   "vid": "047771",
+   "identical": false,
+   "max_abs_lwh": 0.0,
+   "max_abs_xyz": 0.005999999999999339,
+   "mean_center_dist": 0.0030966734900419483,
+   "min_sel_iou": 0.9770740224859475
+  },
+  {
+   "vid": "051657",
+   "identical": false,
+   "max_abs_lwh": 0.0,
+   "max_abs_xyz": 0.009799999999999809,
+   "mean_center_dist": 0.004706697151561027,
+   "min_sel_iou": 0.9719602539221041
+  }
+ ]
+}

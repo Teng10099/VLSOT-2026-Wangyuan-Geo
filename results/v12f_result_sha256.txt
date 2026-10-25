@@ -1,0 +1,13 @@
+# 2026-10-24 16:30（平台显示时间）提交 VLP 平台的 v12f 结果文件 result.zip 中各 TXT 的 SHA256。
+# 用 scripts/run_final.sh test 或 pipeline3.py --load_params 重新生成后，可用 sha256sum result/*.txt 对比。
+# result.zip 本身含压缩时间戳，重新打包后哈希会变，因此只核对 TXT。
+bc9e358a01a624868cd13b7a0ca23b9e17197c0da28d85b871b37d79ec62b054  result/000237.txt
+dbc2c1c6c81ac11c9d90727ea304f8bb7000d7aeb76efd4db75254035ce6c360  result/001483.txt
+4e0f4278252ea7cff77e5a7521904396d0bef14b0115c308fdf3fc0c9aa0da39  result/003235.txt
+2697f7e49971f153ca6159ee581e7fb1ef1c3f5650bfdc5e3dc1d5a67d2b5671  result/006543.txt
+91822d2545d37dc913f8b0e59389759babebe9279490f880e7172963d63d75e9  result/024386.txt
+1e6315fba347138f19c2b7fc054944fcd58f8758579081bc8d4cc51f6c1b2092  result/033447.txt
+93d5fb01372ae0bd5d1f2a09e2bbc49c68cbc01c7fdc3f14feed59f65e3ba32c  result/035729.txt
+1601e1e0b472563dd0cdd0d945d7ece8c99c8a659f7ea65a85b49a6ac4346693  result/036120.txt
+184ae9d343727ae6362cff1c35a20082f39793c07fa679bde4917af91d4f1842  result/047771.txt
+74b53d6d4512aa80a11342c8c7288a926a99f499beb636dd93c059d5dcdd334f  result/051657.txt

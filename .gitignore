@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+# 数据集、标定、权重、缓存与运行输出都不进仓库（数据集禁止二次分发；权重见 README 的网盘链接）
+data/
+weights/
+cache/
+out/
+runs/
+pydeps*/
+*.pt
+*.pth
+*.onnx
+*.h5
+*.pkl
+*.zip
+# 报告配图里含数据集图像的样例裁剪，只放进报告本身
+docs/figs/case_*.png
+docs/figs/fig_cases.png

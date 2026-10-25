@@ -1,0 +1,1 @@
+--stay_iou 0 --zmode median --smooth state_lin --ground global --color_every 3 --dir_w 2 --dir_min 0.1 --zray_w 0.75 --ordinal_mode gen --rel_feat 1 --range_tol 0.04 --range_tol_trunc 0.10 --color_model efn --clip_floor 0.10 --ord_rmax 150 --gt_match rect --center_mode boxfit --bf_margin 10 --range_interp quad --bf_zsig 0.6
