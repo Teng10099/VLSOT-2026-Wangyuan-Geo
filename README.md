@@ -4,7 +4,7 @@
 
 - VLP 平台方法：Tenn-VLSOT-Geo，方法页 <http://vlp.chd.edu.cn/tasks/method/301>
 - 本仓库对应 2026-10-24 16:30（平台显示时间）提交的 **v12f** 版本，复现核对见下文
-- 模型权重与参数：百度网盘【待填写：链接与提取码】，内容见“权重下载”
+- 模型权重与参数：百度网盘 <https://pan.baidu.com/s/1-56d3pIsJE30FOMGDlNdXw?pwd=pgu8>，提取码 `pgu8`，内容见“权重下载”
 - 技术报告（PPT，5 页，含方法概述、创新点、实验结果与消融）：[`reports/wangyuan_vlsot_geo_ppt_5p.pptx`](reports/wangyuan_vlsot_geo_ppt_5p.pptx)，PDF 版 [`reports/wangyuan_vlsot_geo_ppt_5p.pdf`](reports/wangyuan_vlsot_geo_ppt_5p.pdf)
 - 队员：滕恒基（队长）、梁天宇、苗富敬、刘帅、安子茜；指导老师：孙士杰
 
@@ -67,7 +67,7 @@ reports/                   技术报告 PPT（5 页）及其 PDF
 ## 数据准备
 
 1. **官方数据**：在 VLP 平台下载 VLSOT 数据集并解压，目录为 `<VLSOT_DATA>/{train,test}/{json,img}`。数据集遵循 CC BY-NC-SA 3.0，仅限比赛使用、禁止二次分发，本仓库和权重包都不包含任何数据集文件。
-2. **相机标定**：官方数据包不含标定。我们使用源数据集 [V2X-Seq](https://github.com/AIR-THU/DAIR-V2X-Seq) SPD 路侧端公开的标定文件（`infrastructure-side/calib/camera_intrinsic/` 与 `virtuallidar_to_camera/`，按图像名对应；官方图像与其原图逐字节一致）。代码只读取这两个目录，不读取 V2X-Seq 的任何标注。
+2. **相机标定**：官方数据包不含标定。VLSOT 赛道页面说明本数据集的图像取自 V2X-Seq 数据集；我们使用 [V2X-Seq](https://github.com/AIR-THU/DAIR-V2X-Seq) SPD 路侧端公开的标定文件（`infrastructure-side/calib/camera_intrinsic/` 与 `virtuallidar_to_camera/`，按图像名对应；官方图像与其原图逐字节一致）。代码只读取这两个目录，不读取 V2X-Seq 的任何标注。
 3. **环境变量**：
 
 ```bash
@@ -78,8 +78,8 @@ export VLSOT_WORK=/path/to/work                     # 放 weights/ cache/ out/�
 
 ## 权重下载
 
-百度网盘：【待填写：链接】，提取码：【待填写】（有效期不少于 90 天）。
-文件 `VLSOT_Geo_v12f.zip`（307,957,708 字节，SHA256 `03623bc260f2a45d92a7d8cb8c74c8c0d7c10bd4c4d9bc96d3b3f1eeecc7c8ce`），解压后把其中的 `VLSOT_Geo_v12f/` 设为 `$VLSOT_WORK`：
+百度网盘：<https://pan.baidu.com/s/1-56d3pIsJE30FOMGDlNdXw?pwd=pgu8>，提取码：`pgu8`（分享页显示“永久有效”）。
+文件 `VLSOT_Geo_v12f.zip`（307,957,708 字节，网盘显示 293.7M；SHA256 `03623bc260f2a45d92a7d8cb8c74c8c0d7c10bd4c4d9bc96d3b3f1eeecc7c8ce`），下载后可用 `sha256sum` 核对。解压后把其中的 `VLSOT_Geo_v12f/` 设为 `$VLSOT_WORK`：
 
 ```
 说明.txt / SHA256SUMS.txt          包内说明与全部文件的 SHA256

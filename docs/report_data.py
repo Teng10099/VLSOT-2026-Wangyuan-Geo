@@ -16,6 +16,15 @@ METHOD = {
     "url": "http://vlp.chd.edu.cn/tasks/method/301",
     "repo": "https://github.com/Teng10099/VLSOT-2026-Wangyuan-Geo",
 }
+# 权重包的百度网盘分享（2026-10-25 打开分享页核对：文件名、大小 293.7M 与本地包一致，过期时间“永久有效”）
+WEIGHTS = {
+    "url": "https://pan.baidu.com/s/1-56d3pIsJE30FOMGDlNdXw?pwd=pgu8",
+    "short": "pan.baidu.com/s/1-56d3pIsJE30FOMGDlNdXw",
+    "code": "pgu8",
+    "file": "VLSOT_Geo_v12f.zip",
+    "size": "293.7M",
+    "expiry": "永久有效",
+}
 # 平台方法页 301 的 5 次提交（2026-10-24，平台显示时间）
 PLATFORM = [
     ("05:34", "v1", "早期：逐帧贪心选择", 18.0000, 12.0000, 20.2578, 8.3333, 2.5346, 1.6667),

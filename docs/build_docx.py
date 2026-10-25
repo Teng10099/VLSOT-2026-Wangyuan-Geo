@@ -12,12 +12,24 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt
 
-from report_data import ABLATION, CEILING, FACTS, LEADERBOARD, METHOD, PLATFORM, REJECTED, TEAM
+from report_data import ABLATION, CEILING, FACTS, LEADERBOARD, METHOD, PLATFORM, REJECTED, TEAM, WEIGHTS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIG = os.path.join(HERE, "figs")
 TEMPLATE = os.path.join(HERE, "..", "..", "比赛附件", "附件1：人工智能创新大赛项目技术报告模板.docx")
 TODO = "【待填写】"
+# 联系电话、VLP 用户名只写进交给主办方的 docx，不进公开仓库：从仓库外的本地 json 读取，没有时留“待填写”
+PRIVATE = os.environ.get("VLSOT_REPORT_PRIVATE",
+                         os.path.join(HERE, "..", "..", "报名与申请", "报告封面信息.json"))
+
+
+def private_info():
+    import json
+    try:
+        info = json.load(open(PRIVATE, encoding="utf-8"))
+    except OSError:
+        info = {}
+    return {"phone": info.get("phone") or TODO, "vlp_user": info.get("vlp_user") or TODO}
 LATIN, EAST, EAST_H = "Times New Roman", "宋体", "黑体"
 J, C, L = WD_ALIGN_PARAGRAPH.JUSTIFY, WD_ALIGN_PARAGRAPH.CENTER, WD_ALIGN_PARAGRAPH.LEFT
 
@@ -70,6 +82,22 @@ class Writer:
 
     def h2(self, text):
         return self.p(text, size=14, bold=True, indent=False, before=8, after=4, east=EAST_H, keep_next=True)
+
+    def link(self, label, url, size=12):
+        """加粗标签后换行写网址：左对齐、不两端对齐，避免网址在连字符处被拆开或字距被拉开。"""
+        para = self._new()
+        pf = para.paragraph_format
+        pf.alignment = L
+        pf.line_spacing = 1.5
+        pf.space_before = pf.space_after = Pt(0)
+        pf.first_line_indent = Pt(size * 2)
+        pf.keep_with_next = True
+        set_font(para.add_run(label), size, True)
+        run = para.add_run()
+        run.add_break()
+        run.add_text(url)
+        set_font(run, size - 0.5)
+        return para
 
     def caption(self, label, text, keep_next=False):
         return self.p([(label + "  ", True), (text, False)], size=10.5, align=C, indent=False, before=3, after=6,
@@ -178,19 +206,25 @@ def shade(cell, fill):
     tcPr.append(shd)
 
 
-def fill_field(p, label, value, underline=True, condense_pt=0.0):
+def fill_field(p, label, value, underline=True, condense_pt=0.0, newline=False, value_pt=None):
     """封面字段：沿用模板第一个 run 的字体字号，标签 + 值（值加下划线，像填好的横线）。
-    condense_pt>0 时值的字距收紧该磅数（成员名单刚好超出一行时用）。"""
+    condense_pt>0 时值的字距收紧该磅数（成员名单刚好超出一行时用）；
+    newline=True 时值另起一行（网址太长、不能在连字符处断开时用），value_pt 为值的字号。"""
     proto = copy.deepcopy(p.runs[0]._r.rPr) if p.runs and p.runs[0]._r.rPr is not None else None
     for r in list(p.runs):
         r._r.getparent().remove(r._r)
-    for text, ul, cond in ((label, False, 0.0), (value, underline, condense_pt)):
-        run = p.add_run(text)
+    for k, (text, ul, cond) in enumerate(((label, False, 0.0), (value, underline, condense_pt))):
+        run = p.add_run()
         if proto is not None:
             if run._r.rPr is not None:
                 run._r.remove(run._r.rPr)
             run._r.insert(0, copy.deepcopy(proto))
+        if k == 1 and newline:
+            run.add_break()
+        run.add_text(text)
         run.font.underline = ul
+        if k == 1 and value_pt:
+            run.font.size = Pt(value_pt)
         if cond > 0:
             sp = OxmlElement("w:spacing")
             sp.set(qn("w:val"), str(-int(round(cond * 20))))
@@ -216,6 +250,8 @@ def main():
     out_path = sys.argv[1]
     doc = Document(sys.argv[2] if len(sys.argv) > 2 else TEMPLATE)
     P = list(doc.paragraphs)
+    priv = private_info()
+    print("private fields filled:", {k: v != TODO for k, v in priv.items()})
     heads = {k: P[i] for k, i in (("一", 18), ("二", 27), ("三", 38), ("四", 43))}
     for k, i in (("一", 18), ("二", 27), ("三", 38), ("四", 43)):
         assert P[i].text.replace("\u200b", "").strip().startswith(k + "、"), (i, P[i].text)
@@ -225,12 +261,13 @@ def main():
                                 (8, "参赛赛道：", "专项命题挑战赛道  赛道A", False),
                                 (9, "项目负责人：", TEAM["leader"], True),
                                 (10, "所属学院：", TEAM["school"], True),
-                                (11, "联系电话：", TODO, True),
+                                (11, "联系电话：", priv["phone"], True),
                                 (12, "团队成员：", TEAM["members"], True),
-                                (13, "开源代码地址：", METHOD["repo"].replace("https://", ""), True),
+                                (13, "开源代码地址：", METHOD["repo"], True),
                                 (14, "指导教师：", TEAM["advisor"], True),
                                 (15, "填写日期：", TEAM["date"], True)):
-        fill_field(P[i], label, value, ul, condense_pt=0.5 if i == 12 else 0.0)
+        fill_field(P[i], label, value, ul, condense_pt=0.5 if i == 12 else 0.0,
+                   newline=(i == 13), value_pt=13 if i == 13 else None)
     # 模板“四、结论”里有一个零宽空格，WPS 渲染成空隙
     for r in P[43].runs:
         r.text = r.text.replace("\u200b", "")
@@ -271,7 +308,7 @@ def main():
 
     # ================================================================ 一、榜单成绩
     w = Writer(doc, heads["二"])
-    w.p([("VLP 平台用户名：", True), (TODO, False), ("；方法名称：", True),
+    w.p([("VLP 平台用户名：", True), (priv["vlp_user"], False), ("；方法名称：", True),
          (f"{METHOD['short']}（{METHOD['long']}），方法页 {METHOD['url']}。以下成绩为 2026 年 10 月 24 日 16:30"
           "（平台显示时间）提交的 v12f 版本。", False)])
     w.fig("fig_leaderboard.png", 14.6, "VLP 平台 VLSOT 赛道排行榜（2026 年 10 月 25 日截图，按 SR@0.5 排序，红框为本队）")
@@ -294,12 +331,13 @@ def main():
     # ================================================================ 二、技术方案与核心创新点
     w = Writer(doc, heads["三"])
     w.h2("（一）代码与模型权重")
-    w.p([("参赛代码仓库：", True), (METHOD["repo"], False),
-         ("（Apache-2.0 许可）。README 注明“2026 VLP 挑战赛参赛作品”，附 requirements.txt、运行说明、复现脚本"
-          "（scripts/run_final.sh、scripts/run_ablation.sh）和本报告。", False)])
-    w.p([("模型权重下载链接：", True), (TODO + "（网盘链接与提取码，有效期不少于 90 天）", False),
-         ("。权重包含 YOLO11x 检测器（COCO 预训练，.pt 与转换后的 .onnx）、在 TRAIN 上拟合的全部参数"
-          "（params_v12f.json：打分器权重、地平面系数、框中心偏移、boxfit 边噪声尺度），以及检测框与颜色概率缓存。", False)])
+    w.link("参赛代码仓库（GitHub，Apache-2.0 许可）：", METHOD["repo"])
+    w.p("README 注明“2026 VLP 挑战赛参赛作品”，附 requirements.txt、运行说明、复现脚本"
+        "（scripts/run_final.sh、scripts/run_ablation.sh）和技术报告 PPT。")
+    w.link(f"模型权重下载链接（百度网盘，提取码 {WEIGHTS['code']}，分享{WEIGHTS['expiry']}）：", WEIGHTS["url"])
+    w.p(f"网盘文件 {WEIGHTS['file']}（{WEIGHTS['size']}），包含 YOLO11x 检测器（COCO 预训练，.pt 与转换后的 .onnx）、"
+        "在 TRAIN 上拟合的全部参数（params_v12f.json：打分器权重、地平面系数、框中心偏移、boxfit 边噪声尺度），"
+        "以及检测框与颜色概率缓存。")
     w.p([("复现核对：", True),
          ("在仓库代码上重新运行，无论用 TRAIN 重新拟合，还是直接读取参数文件推理（不读取任何 TRAIN 标签），"
           "得到的 10 个结果文件都与提交平台的文件逐字节相同；只用 ONNX 模型推理的核对结果见仓库 README。", False)])

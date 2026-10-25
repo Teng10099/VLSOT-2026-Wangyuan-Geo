@@ -13,7 +13,7 @@ from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE, PP_ALIGN
 from pptx.oxml.ns import qn
 from pptx.util import Inches, Pt
 
-from report_data import ABLATION, CEILING, METHOD, PLATFORM, TEAM
+from report_data import ABLATION, CEILING, METHOD, PLATFORM, TEAM, WEIGHTS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIG = os.path.join(HERE, "figs")
@@ -125,10 +125,13 @@ pic = s.shapes.add_picture(os.path.join(FIG, "case_006543_f0_full.png"), Inches(
 s.shapes.add_picture(os.path.join(FIG, "case_003235_f0_zoom.png"), Inches(7.75), Inches(4.12), width=Inches(2.45))
 s.shapes.add_picture(os.path.join(FIG, "case_033447_f29_zoom.png"), Inches(10.35), Inches(4.12), width=Inches(2.45))
 text(s, 7.75, 6.62, 5.1, 0.4, [("测试集样例。红：选中的检测框　绿：预测 3D 框投影　青：v11c 射线法", 10.5, False, MUTED)])
-text(s, 0.6, 7.02, 10.6, 0.3, [([("代码：", True, MUTED), (METHOD["repo"].replace("https://", "") + "（Apache-2.0）", False, MUTED),
-                                  ("　数据：TRAIN 227 段 / TEST 10 段，每段 30 帧", False, MUTED)], 10.5, False, MUTED)])
+text(s, 0.6, 7.02, 10.9, 0.3, [([("代码：", True, MUTED), (METHOD["repo"].replace("https://", "") + "（Apache-2.0）", False, MUTED),
+                                  ("　权重：", True, MUTED), (f"{WEIGHTS['short']}（提取码 {WEIGHTS['code']}）", False, MUTED)],
+                                 10.5, False, MUTED)])
 text(s, 11.6, 7.02, 1.2, 0.3, [(f"1 / {TOTAL}", 10.5, False, MUTED)], align=PP_ALIGN.RIGHT)
 notes(s, "任务：输入 30 帧单目图像、英文目标描述与相机标定，逐帧输出目标的 l w h x y z（virtuallidar 坐标系）。"
+         "数据：TRAIN 227 段 / TEST 10 段，每段 30 帧。"
+         f"代码 {METHOD['repo']}；权重 {WEIGHTS['url']}（提取码 {WEIGHTS['code']}）。"
          "官方数据包不含标定，我们使用源数据集 V2X-Seq-SPD 路侧端公开的标定文件，只读内参与外参，不读其中任何标注。"
          "平台成绩取自方法页 http://vlp.chd.edu.cn/tasks/method/301 的 2026-10-24 16:30 提交；排名取自 2026-10-25 抓取的排行榜，"
          "按 SR@0.5 排序第 3（18 个方法中 14 个有成绩）；ACE 在 SR@0.5 大于 0 的 10 个方法中最低。"
