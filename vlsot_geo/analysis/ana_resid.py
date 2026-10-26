@@ -22,6 +22,8 @@ TYPES = ["Car", "Van", "Truck", "Bus"]
 
 
 def feats(x, desc, typ):
+    """一段 dump 的逐帧残差回归特征 (30, 19) 与有效帧掩码：检测框中心与宽高（归一化）、log 宽高比、四边是否截断、
+    文本尺寸 l w h、log 距离、航向与视线夹角的 sin / cos、是否运动、车辆类型（独热）。没有选中框的帧特征为 0、掩码为 False。"""
     t = parse_text(desc)
     az = np.radians(t["azimuth"] or 0.0)
     p = np.array(x["pred"])

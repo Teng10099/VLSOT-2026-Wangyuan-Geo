@@ -13,10 +13,12 @@ DETS = json.load(open(WORK + "/cache/dets_yolo11x_1920.json"))
 
 
 def contains(b, uv):
+    """像素点 uv 是否落在框 b 内（含边界）。"""
     return b[0] <= uv[0] <= b[2] and b[1] <= uv[1] <= b[3]
 
 
 def iou2d(a, b):
+    """两个 2D 框 (x1, y1, x2, y2, ...) 的 IoU。"""
     ix = max(0, min(a[2], b[2]) - max(a[0], b[0]))
     iy = max(0, min(a[3], b[3]) - max(a[1], b[1]))
     inter = ix * iy

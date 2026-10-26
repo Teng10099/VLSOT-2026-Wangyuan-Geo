@@ -19,6 +19,7 @@ FONT_B = r"C:\Windows\Fonts\msyhbd.ttc"
 
 
 def font(size, bold=False):
+    """微软雅黑字体对象；bold=True 且粗体字体文件存在时用粗体。"""
     return ImageFont.truetype(FONT_B if bold and os.path.exists(FONT_B) else FONT, size)
 
 
@@ -89,6 +90,7 @@ for k in range(8):
 
 
 def arrow(x1, y1, x2, y2, color=(82, 104, 125)):
+    """在流程图上画一条带箭头的线段（终点处画两条 26 像素的箭翼）。"""
     d.line((x1, y1, x2, y2), fill=color, width=6)
     import math
     a = math.atan2(y2 - y1, x2 - x1)

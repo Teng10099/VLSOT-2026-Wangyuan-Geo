@@ -8,6 +8,7 @@ import numpy as np
 
 
 def iou(p, g):
+    """逐帧的正常 3D IoU：p、g 为 (30, 6) 的 l w h x y z 数组。"""
     lo_p, hi_p = p[:, 3:] - p[:, :3] / 2, p[:, 3:] + p[:, :3] / 2
     lo_g, hi_g = g[:, 3:] - g[:, :3] / 2, g[:, 3:] + g[:, :3] / 2
     inter = np.clip(np.minimum(hi_p, hi_g) - np.maximum(lo_p, lo_g), 0, None).prod(1)

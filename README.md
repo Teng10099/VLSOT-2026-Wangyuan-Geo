@@ -150,6 +150,8 @@ ONNX 检测是 FP32，提交结果的检测缓存是 V100 上的 FP16，因此�
 
 提交文件各 TXT 的 SHA256 见 [`results/v12f_result_sha256.txt`](results/v12f_result_sha256.txt)；ONNX 各项核对的原始输出（`check_onnx.py` 生成）在 [`results/verification/`](results/verification/)。
 
+2026-10-26 给全部 Python 文件补充了函数说明（docstring），没有改动代码：去掉 docstring 后，每个文件的语法树与上述核对时的版本完全相同，上表结论不受影响。
+
 ## 消融结果（TRAIN 5 折交叉验证，每行在上一行基础上增加一项改动）
 
 | 配置 | SR@0.5 | SR@0.7 | AOR | ACE (m) | PR@1.0 | PR@0.5 |

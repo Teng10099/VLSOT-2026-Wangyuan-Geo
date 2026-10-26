@@ -32,6 +32,7 @@ def rects(centers, lwh, yaw, calib):
 
 
 def trunc_flags(box, margin, w_img=1920, h_img=1080):
+    """框的左 / 上 / 右 / 下四条边是否被图像边界截断（离边界不到 margin 像素），返回长度 4 的布尔数组。"""
     return np.array([box[0] < margin, box[1] < margin, box[2] > w_img - margin, box[3] > h_img - margin])
 
 

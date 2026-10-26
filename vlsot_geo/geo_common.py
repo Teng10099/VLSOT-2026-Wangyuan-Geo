@@ -47,10 +47,12 @@ def load_clips(split):
 
 
 def image_path(clip, frame_index):
+    """片段第 frame_index 帧的图像路径：$VLSOT_DATA/<split>/img/<图像名>。"""
     return f"{DATA}/{clip['split']}/img/{clip['frames'][frame_index]['img']}"
 
 
 def read_ids(name):
+    """读取 $VLSOT_SPLIT/<name>.txt 中的片段 ID 列表（只有 --mode val 用到）。"""
     return [x.strip() for x in open(f"{SPLIT}/{name}.txt") if x.strip()]
 
 
@@ -59,6 +61,8 @@ _CALIB_CACHE = {}
 
 
 def load_calib(img_name):
+    """读取图像对应的 V2X-Seq-SPD 路侧标定（与图像同名的 json，结果缓存）。
+    返回 K（3×3 内参）、D（畸变系数 k1 k2 p1 p2 k3）、R 与 t（virtuallidar → 相机的旋转与平移）。"""
     stem = os.path.splitext(img_name)[0]
     if stem in _CALIB_CACHE:
         return _CALIB_CACHE[stem]
@@ -73,6 +77,7 @@ def load_calib(img_name):
 
 
 def lidar_to_cam(points, calib):
+    """virtuallidar 坐标 (N, 3) → 相机坐标 (N, 3)：p_cam = R p + t。"""
     points = np.atleast_2d(points)
     return points @ calib["R"].T + calib["t"]
 
@@ -95,6 +100,7 @@ def project(points, calib, distort=False):
 
 
 def undistort_normalized(uv, calib, iters=20):
+    """像素 → 去畸变后的归一化相机坐标 (N, 2)：对 k1 k2 p1 p2 k3 畸变模型做 iters 次定点迭代求逆。"""
     K = calib["K"]
     xd = (uv[:, 0] - K[0, 2]) / K[0, 0]
     yd = (uv[:, 1] - K[1, 2]) / K[1, 1]
@@ -205,12 +211,14 @@ def parse_region(text):
 
 # ---------------------------------------------------------------- 评估（batch_evaluate.py 口径）
 def to_minmax(lwh, xyz):
+    """中心 xyz + 尺寸 lwh → 轴对齐框 (xmin, ymin, zmin, xmax, ymax, zmax)。"""
     lwh = np.asarray(lwh, dtype=np.float64)
     xyz = np.asarray(xyz, dtype=np.float64)
     return np.concatenate([xyz - lwh / 2, xyz + lwh / 2], axis=-1)
 
 
 def iou_aabb(a, b):
+    """两组轴对齐 3D 框（to_minmax 格式，按最后一维对齐）逐个的 IoU。"""
     inter = np.clip(np.minimum(a[..., 3:], b[..., 3:]) - np.maximum(a[..., :3], b[..., :3]), 0, None)
     vi = inter.prod(-1)
     va = (a[..., 3:] - a[..., :3]).prod(-1)
@@ -237,6 +245,7 @@ def evaluate(pred, gt):
 
 
 def gt_array(clip):
+    """TRAIN 片段的 GT 数组 (30, 6)，每行 l w h x y z。"""
     return np.array([np.r_[f["lwh"], f["xyz"]] for f in clip["frames"]])
 
 

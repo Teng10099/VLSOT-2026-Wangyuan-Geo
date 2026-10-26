@@ -28,6 +28,8 @@ PROMPTS = {
 
 
 def main():
+    """CLIP 零样本颜色分类：每种颜色若干提示词的文本特征取平均作为类别向量，每个检测框裁图后与之算余弦相似度
+    （×100 后 softmax），得到 8 类颜色概率；宽或高小于 8 像素的框保持均匀分布。结果写到 $VLSOT_WORK/cache/clip_color.pkl。"""
     dets = json.load(open(WORK + "/cache/dets_yolo11x_1920.json"))
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = CLIPModel.from_pretrained(CLIP_DIR).to(device).eval().half()
@@ -46,6 +48,7 @@ def main():
     batch_crops, batch_index = [], []
 
     def flush():
+        """把累积的裁图批量送入 CLIP 图像编码器，写回对应框的颜色概率并清空批次。"""
         if not batch_crops:
             return
         with torch.no_grad():

@@ -16,6 +16,7 @@ clips = {c["vid"]: c for c in load_clips("train")}
 
 
 def cam_xy(img):
+    """相机光心在 virtuallidar 坐标系下的平面位置 (x, y)。"""
     o, _ = pixel_rays([[960.0, 540.0]], load_calib(img))
     return o[:2]
 

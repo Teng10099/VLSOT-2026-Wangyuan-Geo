@@ -8,6 +8,7 @@ import numpy as np
 
 
 def load(pat):
+    """读取匹配 glob 模式的各折 dump（按文件名排序，第 k 个文件记为第 k 折），合并成 {vid: 结果}。"""
     out = {}
     for k, p in enumerate(sorted(glob.glob(pat))):
         for v, x in json.load(open(p)).items():
@@ -17,6 +18,7 @@ def load(pat):
 
 
 def sr(x):
+    """单个片段的正常 3D IoU 指标：返回 (SR@0.5 百分比, 平均 IoU)。"""
     p, g = np.array(x["pred"]), np.array(x["gt"])
     lo = np.maximum(p[:, 3:] - p[:, :3] / 2, g[:, 3:] - g[:, :3] / 2)
     hi = np.minimum(p[:, 3:] + p[:, :3] / 2, g[:, 3:] + g[:, :3] / 2)

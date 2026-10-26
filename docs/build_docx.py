@@ -24,6 +24,8 @@ PRIVATE = os.environ.get("VLSOT_REPORT_PRIVATE",
 
 
 def private_info():
+    """读取封面的私有字段（联系电话、VLP 用户名）：路径取环境变量 VLSOT_REPORT_PRIVATE，
+    默认为仓库外的“报名与申请/报告封面信息.json”；文件不存在或字段为空时填 TODO 占位。"""
     import json
     try:
         info = json.load(open(PRIVATE, encoding="utf-8"))
@@ -35,6 +37,7 @@ J, C, L = WD_ALIGN_PARAGRAPH.JUSTIFY, WD_ALIGN_PARAGRAPH.CENTER, WD_ALIGN_PARAGR
 
 
 def set_font(run, size, bold=False, east=EAST, latin=LATIN, italic=False, sub=False):
+    """设置 run 的字号、加粗、斜体、下标，以及西文（latin）与中文（east）字体。"""
     run.font.size = Pt(size)
     run.font.bold = bold
     run.font.italic = italic
@@ -57,9 +60,11 @@ class Writer:
     """anchor 不为 None 时，所有内容依次插在 anchor 段落之前；否则追加到正文末尾。"""
 
     def __init__(self, doc, anchor):
+        """doc：python-docx 文档；anchor：插入位置的段落（None 表示追加到正文末尾）。"""
         self.doc, self.anchor = doc, anchor
 
     def _new(self):
+        """新建一个空段落：插在 anchor 之前，或追加到正文末尾。"""
         return self.anchor.insert_paragraph_before() if self.anchor is not None else self.doc.add_paragraph()
 
     def p(self, content, size=12, bold=False, align=J, indent=True, before=0, after=0, line=1.5, east=EAST,
@@ -81,6 +86,7 @@ class Writer:
         return para
 
     def h2(self, text):
+        """二级标题：黑体 14 磅加粗，不缩进，与下一段保持同页。"""
         return self.p(text, size=14, bold=True, indent=False, before=8, after=4, east=EAST_H, keep_next=True)
 
     def link(self, label, url, size=12):
@@ -100,10 +106,12 @@ class Writer:
         return para
 
     def caption(self, label, text, keep_next=False):
+        """图 / 表题注：加粗的编号 + 说明文字，10.5 磅居中。"""
         return self.p([(label + "  ", True), (text, False)], size=10.5, align=C, indent=False, before=3, after=6,
                       line=1.25, keep_next=keep_next)
 
     def fig(self, name, width_cm, text):
+        """插入居中的图片（docs/figs 下的文件，宽 width_cm 厘米），并在图下加编号题注。"""
         para = self._new()
         para.paragraph_format.alignment = C
         para.paragraph_format.line_spacing = 1.0
@@ -114,6 +122,8 @@ class Writer:
         self.caption(f"图 {COUNT['fig']}", text)
 
     def table(self, rows, widths, text, highlight=(), size=10.5, left_cols=(0,)):
+        """插入三线表：表题在表上方；rows 第 0 行为表头（加粗，下加细线）；widths 为各列宽（厘米，合计约等于版心宽 14.6）；
+        highlight 中的行加粗并加浅绿底色；left_cols 中的列左对齐，其余居中。"""
         assert abs(sum(widths) - 14.6) < 0.25, (text, sum(widths))  # A4 版心宽 14.65 cm
         COUNT["tab"] += 1
         self.caption(f"表 {COUNT['tab']}", text, keep_next=True)
@@ -184,6 +194,7 @@ def three_line(tbl):
 
 
 def cell_border(cell, edge, sz):
+    """给单元格的一条边（如 bottom）加黑色单实线，sz 为线宽（单位 1/8 磅）。"""
     tcPr = cell._tc.get_or_add_tcPr()
     borders = tcPr.find(qn("w:tcBorders"))
     if borders is None:
@@ -198,6 +209,7 @@ def cell_border(cell, edge, sz):
 
 
 def shade(cell, fill):
+    """设置单元格底纹，fill 为十六进制颜色（如 E6F4F1）。"""
     tcPr = cell._tc.get_or_add_tcPr()
     shd = OxmlElement("w:shd")
     shd.set(qn("w:val"), "clear")
@@ -232,6 +244,7 @@ def fill_field(p, label, value, underline=True, condense_pt=0.0, newline=False, 
 
 
 def n(x, d=2):
+    """数值格式化为保留 d 位小数的字符串。"""
     return f"{x:.{d}f}"
 
 
@@ -247,6 +260,8 @@ def rich(text):
 
 
 def main():
+    """按附件 1 模板生成技术报告：填写封面字段，删除全部“填写说明”和占位空段，
+    在“一、二、三、四”四个一级标题下依次写入正文、图和表，保存到 argv[1]（argv[2] 可指定模板）。"""
     out_path = sys.argv[1]
     doc = Document(sys.argv[2] if len(sys.argv) > 2 else TEMPLATE)
     P = list(doc.paragraphs)

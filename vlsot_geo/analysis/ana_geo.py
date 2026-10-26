@@ -20,10 +20,12 @@ TEST_SEQS = {"0000", "0001", "0002", "0008", "0029", "0033", "0057", "0059"}
 
 
 def contains(b, uv):
+    """像素点 uv 是否落在框 b 内（含边界）。"""
     return b[0] <= uv[0] <= b[2] and b[1] <= uv[1] <= b[3]
 
 
 def iou2d(a, b):
+    """两个 2D 框 (x1, y1, x2, y2, ...) 的 IoU。"""
     ix = max(0, min(a[2], b[2]) - max(a[0], b[0]))
     iy = max(0, min(a[3], b[3]) - max(a[1], b[1]))
     inter = ix * iy
@@ -31,6 +33,7 @@ def iou2d(a, b):
 
 
 def iou3d(lwh_p, c_p, lwh_g, c_g):
+    """单个预测框与 GT 框（尺寸 + 中心）的轴对齐 3D IoU。"""
     lo = np.maximum(c_p - lwh_p / 2, c_g - lwh_g / 2)
     hi = np.minimum(c_p + lwh_p / 2, c_g + lwh_g / 2)
     inter = np.clip(hi - lo, 0, None).prod()
@@ -45,6 +48,7 @@ print("global plane", plane.round(4))
 
 
 def range_curve(dist):
+    """文本距离 → 逐帧距离（关键帧 0 / 14 / 29 之间分段线性插值，同 pipeline3.range_curve 的 lin 方式）。"""
     if len(dist) >= 3:
         return np.interp(np.arange(30), [0, 14, 29], dist[:3])
     if len(dist) == 2:
@@ -156,6 +160,7 @@ print("\nglobal box offset", OFFSET.round(4), " bias", BIAS.round(3), " sig", SI
 
 
 def on_range(o, d, r):
+    """射线与竖直圆柱面 x² + y² = r² 的交点，取较大的根；无交点或在相机后方时返回 None（同 pipeline3.on_range）。"""
     a = d[0] ** 2 + d[1] ** 2
     bb = 2 * (o[0] * d[0] + o[1] * d[1])
     cc = o[0] ** 2 + o[1] ** 2 - r ** 2
@@ -199,6 +204,7 @@ names = [k for k in out[0] if k not in ("seq", "r", "trunc", "park", "how", "vid
 
 
 def report(title, rs):
+    """打印一组样本上各种中心估计方式的 SR@0.5、平均 IoU 与平均中心误差。"""
     if not rs:
         return
     print(f"  {title:28s} n={len(rs):5d}", end="")

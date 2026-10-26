@@ -45,6 +45,7 @@ if args.backend == "keras":
     model = tf.keras.models.load_model(args.model or WORK + "/weights/EFN-model.best.h5")
 
     def predict(x):
+        """Keras 后端：一批 224×224 的 RGB 裁图（NHWC，已除以 255）→ 15 类颜色概率。"""
         return model.predict(x, batch_size=64, verbose=0)
 else:
     import onnxruntime as ort
@@ -55,6 +56,7 @@ else:
     inp = sess.get_inputs()[0].name
 
     def predict(x):
+        """ONNX 后端：同 Keras 后端，按每批 64 张送入 onnxruntime。"""
         return np.concatenate([sess.run(None, {inp: x[i:i + 64]})[0] for i in range(0, len(x), 64)])
 
 dets = json.load(open(args.dets))
@@ -71,6 +73,7 @@ batch, index = [], []
 
 
 def flush():
+    """把累积的裁图批量推理，结果写回 out[图像键][框序号]，然后清空批次。"""
     if not batch:
         return
     p = predict(np.stack(batch))
@@ -81,6 +84,7 @@ def flush():
 
 
 def save():
+    """把当前的概率缓存写成 pkl（先写临时文件再替换，中途中断也不会损坏已有缓存）。"""
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     pickle.dump({"names": CLASSES, "probs": out}, open(args.out + ".tmp", "wb"))
     os.replace(args.out + ".tmp", args.out)

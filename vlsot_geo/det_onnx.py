@@ -97,6 +97,7 @@ def postprocess(pred, r, pad, img_hw):
 
 
 def main():
+    """加载 ONNX 模型，逐张图做 letterbox → 推理 → 后处理，把全部检测框写成 json（格式同 det.py）。"""
     opts = ort.SessionOptions()
     if args.threads > 0:
         opts.intra_op_num_threads = args.threads

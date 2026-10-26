@@ -10,6 +10,7 @@ clips = load_clips("train")
 
 
 def iou(lp, cp, lg, cg):
+    """尺寸 + 中心形式的轴对齐 3D IoU，支持批量（最后一维为 xyz）。"""
     lo = np.maximum(cp - lp / 2, cg - lg / 2)
     hi = np.minimum(cp + lp / 2, cg + lg / 2)
     inter = np.clip(hi - lo, 0, None).prod(-1)

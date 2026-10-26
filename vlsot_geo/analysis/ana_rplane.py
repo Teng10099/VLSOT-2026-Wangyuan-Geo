@@ -18,6 +18,7 @@ plane = np.linalg.lstsq(np.c_[rows[:, 0], rows[:, 1], np.ones(len(rows))], rows[
 
 
 def local_linear(v, k):
+    """逐点局部线性回归平滑，窗口 ±k（同 pipeline3.local_linear）。"""
     ts = np.arange(len(v))
     out = np.empty(len(v))
     for i in range(len(v)):
@@ -28,6 +29,7 @@ def local_linear(v, k):
 
 
 def ground_range(box, img):
+    """框底边中点的视线与全局地平面交点的水平距离（米）。"""
     o, dirs = pixel_rays([[(box[0] + box[2]) / 2, box[3]]], load_calib(img))
     dd = dirs[0]
     a, b, c = plane

@@ -36,6 +36,8 @@ print("anchor cases with ordinal:", len(cases))
 
 
 def rank_of(target, refs):
+    """按生成脚本的名次定义计算 target 在 refs 中的名次（1 起）：同一九宫格内，按“格子左上角 → 框底边中点”的像素距离排序；
+    与 target 的 IoU ≥ 0.7 的框视为同一辆车，不计入。"""
     cell = P.gen_cell(target)
     cx = (target[0] + target[2]) / 2
     cy = (target[1] + target[3]) / 2

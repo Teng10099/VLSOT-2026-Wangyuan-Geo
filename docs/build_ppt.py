@@ -30,6 +30,7 @@ TOTAL = 5
 
 
 def style_run(run, size, bold=False, color=INK):
+    """设置 run 的字号、加粗、颜色，并把西文、东亚、复杂文种字体都设为 FONT。"""
     run.font.size = Pt(size)
     run.font.bold = bold
     run.font.color.rgb = color
@@ -63,6 +64,7 @@ def text(slide, x, y, w, h, paras, anchor=MSO_ANCHOR.TOP, align=PP_ALIGN.LEFT, s
 
 
 def box(slide, x, y, w, h, fill=CARD, edge=LINE, radius=0.08, width=1.25):
+    """圆角矩形卡片：填充色 fill、边框色 edge、圆角比例 radius、边框宽 width 磅，无阴影。"""
     shp = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
     shp.adjustments[0] = radius
     shp.fill.solid()
@@ -75,6 +77,7 @@ def box(slide, x, y, w, h, fill=CARD, edge=LINE, radius=0.08, width=1.25):
 
 
 def line(slide, x1, y1, x2, y2, arrow=False, color=MUTED, width=2.0):
+    """直线连接符；arrow=True 时在终点加三角箭头。"""
     c = slide.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, Inches(x1), Inches(y1), Inches(x2), Inches(y2))
     c.line.color.rgb = color
     c.line.width = Pt(width)
@@ -88,6 +91,7 @@ def line(slide, x1, y1, x2, y2, arrow=False, color=MUTED, width=2.0):
 
 
 def frame(title, number, subtitle=None):
+    """新建一页内容页：标题、标题下的强调条、可选副标题、页脚（队名与方法名）和页码 number / TOTAL，返回该页。"""
     s = prs.slides.add_slide(BLANK)
     text(s, 0.55, 0.32, 12.2, 0.62, [(title, 28, True, INK)])
     bar = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.58), Inches(0.98), Inches(0.75), Inches(0.06))
@@ -102,6 +106,7 @@ def frame(title, number, subtitle=None):
 
 
 def notes(slide, content):
+    """写入该页的演讲者备注。"""
     slide.notes_slide.notes_text_frame.text = content
 
 

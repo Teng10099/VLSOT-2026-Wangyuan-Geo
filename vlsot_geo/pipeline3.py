@@ -159,6 +159,7 @@ _ORD_WORDS = "|".join(sorted(ORDINALS, key=len, reverse=True))
 
 
 def region_of(phrase):
+    """区域短语（如 "upper left"）→ 九宫格 (row, col)，取值 0/1/2；没提到的方向取中间 1。"""
     row = col = None
     for w in phrase.split():
         if w in ("upper", "top"):
@@ -173,6 +174,9 @@ def region_of(phrase):
 
 
 def parse_ordinal(seg):
+    """从一段描述中解析名次，返回 (名次, 方向)；没有名次时返回 None。
+    支持序数词写法（"the third vehicle"、"order is the second"）和数字写法（"order 3"、"3rd car"）；
+    方向：序数词写法里出现 "from the top" 时为 "top"，其余为 "near"。"""
     m = re.search(rf"({_ORD_WORDS})\s+(?:\w+\s+)?(?:vehicle|car|truck|van|bus|object|order|position|one|item|entity)", seg)
     if not m:
         m = re.search(rf"(?:order|position)\s+(?:is\s+|of\s+)?(?:the\s+)?({_ORD_WORDS})", seg)
@@ -206,6 +210,7 @@ def gen_ordinal_ranks(boxes):
 
 
 def nms_agnostic(boxes, thr=0.7):
+    """类别无关的贪心 NMS：按置信度 box[4] 从高到低，保留与已保留框 IoU 都小于 thr 的框，返回保留框的下标。"""
     order = sorted(range(len(boxes)), key=lambda i: -boxes[i][4])
     keep = []
     for i in order:
@@ -215,6 +220,10 @@ def nms_agnostic(boxes, thr=0.7):
 
 
 def parse_chunks(desc):
+    """把描述按时间提示语（"as the video progresses"、"towards the end"、"finally" 等）切成首 / 中 / 末三段，
+    逐段解析：九宫格区域（跳过 "relative"、"positioned to the" 这类相对位置说法）、截断状态（1=截断，0=明确未截断，
+    None=未提及）、名次、朝向词、与最近车辆的方位关系、最近车辆颜色。
+    返回 3 个字典的列表，依次对应关键帧第 0 / --anchor_mid / 29 帧。"""
     text = desc.lower()
     cuts = [m.start() for m in re.finditer(r"as the video (?:progresses|continues)|towards the end|by the end|"
                                            r"at the end|in the end|finally", text)]
@@ -277,6 +286,8 @@ _MOTION_PHRASE = re.compile(r"(?:moving|traveling|travelling|driving|heading|fac
 
 
 def parse_relation(seg):
+    """解析“目标相对最近车辆”的方位词（left / right / top / under / lower right 等，见 REL_VEC），没有则返回 None。
+    只看 nearest、closest、adjacent 等关键词之后 260 个字符，并先去掉 "moving to the left" 这类运动方向短语，避免误判。"""
     m = re.search(r"nearest|closest|adjacent|accompanied|next to|followed|alongside|neighbo", seg)
     if not m:
         return None
@@ -288,6 +299,9 @@ def parse_relation(seg):
 
 
 def space_relate3d(self_xy, near_xy, thr=3.7):
+    """复刻生成脚本 space_relate3d：由目标与最近车辆的平面坐标 (x, y)（virtuallidar）判定目标相对最近车辆的方位。
+    |dx| ≤ thr 时只分左右（y 较大为 left）；否则 |dy| ≤ thr 时只分前后（x 较大为 top，否则 under）；
+    都不满足时按 dx、dy 的符号取四个斜向之一。"""
     sx, sy = self_xy
     nx, ny = near_xy
     if abs(sx - nx) <= thr:
@@ -308,6 +322,8 @@ ORIENT_RE = re.compile(r"(?:fac(?:es|ing)|oriented|orientation|pointing)\s+(?:to
 
 
 def parse_orient(seg):
+    """解析朝向词（facing / oriented / pointing … front / back / left / right，或 leftward / rightward / forward /
+    backward orientation），返回 virtuallidar 航向角（度，见 ORIENT_DEG）；没有则返回 None。"""
     m = ORIENT_RE.search(seg)
     if not m:
         return None
@@ -315,6 +331,7 @@ def parse_orient(seg):
 
 
 def color_of(clip):
+    """把 json 的 color 字段归并到 COLORS 中的一类（子串匹配，"-" 视作空格）；对不上时返回 "other"。"""
     c = (clip.get("color") or "").lower().replace("-", " ").strip()
     for name in COLORS:
         n = name.replace("-", " ")
@@ -331,6 +348,9 @@ EFN_GROUPS = {"white": ["white"], "black": ["black"], "silver grey": ["silver", 
 
 # ---------------------------------------------------------------- 颜色
 def color_feature(img, box):
+    """kNN 颜色模型（--color_model knn，v12f 不用）的 32 维手工颜色特征：取框中央一半的区域，
+    HSV 色相直方图（按饱和度×亮度加权，12 维）、饱和度直方图（6）、亮度直方图（8）、BGR 均值（3）、
+    饱和度均值 / 亮度均值 / 亮度标准差（3）。裁出的区域为空时返回全零。"""
     x1, y1, x2, y2 = [int(v) for v in box[:4]]
     w, h = x2 - x1, y2 - y1
     crop = img[max(0, y1 + h // 4):min(H_IMG, y2 - h // 4), max(0, x1 + w // 4):min(W_IMG, x2 - w // 4)]
@@ -347,7 +367,10 @@ def color_feature(img, box):
 
 
 class ColorKNN:
+    """颜色 kNN 分类器（--color_model knn）：样本为 TRAIN 中 GT 对应检测框的 color_feature 与 json 颜色标签，
+    按欧氏距离取 k 个近邻估计颜色概率。"""
     def __init__(self, feats, labels, k=25, keys=None):
+        """feats: (N, 32) 特征；labels: 颜色名；k: 近邻数；keys: 每个样本所属目标 (seq, track)，供 without() 使用。"""
         self.X, self.y, self.k = np.array(feats), np.array(labels), k
         self.keys = list(keys) if keys is not None else [None] * len(self.y)
 
@@ -357,22 +380,27 @@ class ColorKNN:
         return ColorKNN(self.X[keep], self.y[keep], self.k, [self.keys[i] for i in keep])
 
     def prob(self, f, name):
+        """特征 f 属于颜色 name 的概率：(k 个近邻中该颜色的个数 + 0.5) / (k + 0.5 × 类别数)。"""
         idx = np.argsort(np.linalg.norm(self.X - f, axis=1))[:self.k]
         return (np.sum(self.y[idx] == name) + 0.5) / (self.k + 0.5 * len(COLORS))
 
 
 # ---------------------------------------------------------------- 几何
 def contains(b, uv):
+    """像素点 uv 是否落在框 b = (x1, y1, x2, y2, ...) 内（含边界）。"""
     return b[0] <= uv[0] <= b[2] and b[1] <= uv[1] <= b[3]
 
 
 def ray_center(box, calib, offset):
+    """过“框中心 + 全局偏移”像素的视线；offset 以框宽、框高为单位（fit_offset 在 TRAIN 上拟合）。
+    返回 virtuallidar 坐标系下的射线起点 o (3,) 与单位方向 d (3,)。"""
     w, h = box[2] - box[0], box[3] - box[1]
     o, d = pixel_rays([[(box[0] + box[2]) / 2 + offset[0] * w, (box[1] + box[3]) / 2 + offset[1] * h]], calib)
     return o, d[0]
 
 
 def on_plane(o, d, plane, hh):
+    """射线 o + s·d 与平面 z = a x + b y + c + hh（地平面抬高 hh）的交点；射线与平面平行或交点在相机后方时返回 None。"""
     a, b, c = plane
     n = np.array([a, b, -1.0])
     den = d @ n
@@ -383,6 +411,8 @@ def on_plane(o, d, plane, hh):
 
 
 def on_range(o, d, r):
+    """射线 o + s·d 与竖直圆柱面 x² + y² = r²（水平距离等于 r）的交点，取较大的根（视线前方）；
+    无交点或交点在相机后方时返回 None。"""
     a = d[0] ** 2 + d[1] ** 2
     b = 2 * (o[0] * d[0] + o[1] * d[1])
     c = o[0] ** 2 + o[1] ** 2 - r ** 2
@@ -394,6 +424,7 @@ def on_range(o, d, r):
 
 
 def iou2d(a, b):
+    """两个 2D 框 (x1, y1, x2, y2, ...) 的 IoU。"""
     ix = max(0, min(a[2], b[2]) - max(a[0], b[0]))
     iy = max(0, min(a[3], b[3]) - max(a[1], b[1]))
     inter = ix * iy
@@ -483,6 +514,8 @@ def fit_ground(clips, exclude_tracks=frozenset()):
 
 
 def fit_offset(clips):
+    """全局框中心偏移（只用 TRAIN 标签）：GT 中心投影相对 GT 对应检测框中心的偏移（以框宽、框高为单位），
+    每段每 3 帧取一次，返回中位数 (du, dv)。--gt_match rect 时跳过被图像边界截断的框（边距 --bf_margin）。"""
     offs = []
     for c in clips:
         for fi in range(0, 30, 3):
@@ -520,6 +553,8 @@ def fit_bf_bias(clips):
 
 # ---------------------------------------------------------------- 候选
 def range_curve(dist):
+    """文本距离 → 逐帧距离 (30,)：有三个距离时在第 0 / --anchor_mid / 29 帧之间分段线性插值
+    （--range_interp quad 时为过三点的二次曲线）；两个距离时在第 0 / 29 帧之间线性插值；一个距离时为常数；没有距离时返回 None。"""
     if len(dist) >= 3 and args.range_interp == "quad":
         return np.polyval(np.polyfit([0, args.anchor_mid, 29], dist[:3], 2), np.arange(30))
     if len(dist) >= 3:
@@ -532,6 +567,26 @@ def range_curve(dist):
 
 
 def clip_candidates(clip, planes, offset, color_model):
+    """为一个片段的 30 帧生成候选框与特征，并给出 boxfit 用的逐帧航向。
+
+    每个检测框（视线与地平面有交点时）是一个候选，特征 feat 共 11 维，顺序同 FEAT_NAMES；
+    打分器的代价 = feat · w，越小越像目标：
+      0 range       框中心射线与“地平面 + h/2”交点的水平距离 与 文本距离曲线 的相对误差（扣除死区 --range_tol，上限 1）
+      1 cls         检测类别与 json 的 type 不符时为 1
+      2 conf        检测置信度
+      3 region      所在九宫格与文本区域的曼哈顿距离（仅关键帧）
+      4 trunc       框是否贴图像边界 与 文本截断描述 不一致时为 1（仅关键帧）
+      5 color       目标颜色的 -log 概率（EFN / CLIP / kNN；只在关键帧和每 --color_every 帧计算）
+      6 aspect      |log(框高 / 框宽)|（仅关键帧）
+      7 anchor      关键帧恒为 1（偏置项）
+      8 ordinal     按名次定义算出的名次与文本名次之差（上限 3，再除以 3）
+      9 relation    与最近车辆的方位关系和文本不一致的程度（--rel_feat）
+      10 near_color 最近车辆颜色的 -log 概率（--near_color_feat）
+    v12f 配置（configs/v12f.args）下 near_color 未启用、恒为 0；anchor 在同一帧内对所有候选相同，不影响排序，
+    拟合出的权重为 0（见 params_v12f.json）。实际起作用的是其余 9 维，即报告中的“9 个特征”。
+    关键帧为第 0 / --anchor_mid / 29 帧，对应 parse_chunks 的三段；文本没有尺寸时用 4.5 × 1.8 × 1.5 m。
+    每个候选还记录视线 (o, d)、与地平面的交点 p_plane、与文本距离圆柱的交点 P（失败时用 p_plane）。
+    返回字典：t（parse_text 结果）、lwh、plane、rc（逐帧距离）、frames（每帧的候选列表）、state、heading、yaws、imgs、seq、cam。"""
     t = parse_text(clip["desc"])
     chunks = parse_chunks(clip["desc"])
     lwh = t["lwh"] if t["lwh"] is not None else np.array([4.5, 1.8, 1.5])
@@ -703,6 +758,9 @@ def frame_headings(t, chunks, state):
 
 # ---------------------------------------------------------------- 打分器（向量化 softmax 排序）
 def train_scorer(samples, l2=1e-2, iters=400, lr=0.5):
+    """训练候选打分器（线性 softmax 排序模型）。samples：[(该帧全部候选的特征矩阵 (n, 11), GT 对应候选的下标)]。
+    P(候选 i) ∝ exp(-feat_i · w)，用全批量梯度下降最小化 GT 候选的负对数似然（L2 正则系数 l2）。
+    返回权重 w；代价 = feat · w，越小越像目标。"""
     X = np.concatenate([s[0] for s in samples])
     sizes = np.array([len(s[0]) for s in samples])
     starts = np.r_[0, np.cumsum(sizes)[:-1]]
@@ -721,6 +779,7 @@ def train_scorer(samples, l2=1e-2, iters=400, lr=0.5):
 
 
 def build_color_model(clips):
+    """用 TRAIN 片段第 0 / 10 / 20 / 29 帧 GT 对应检测框的 color_feature 和 json 颜色构建 ColorKNN（只用于 --color_model knn）。"""
     feats, labels, keys = [], [], []
     for c in clips:
         name = color_of(c)
@@ -736,6 +795,11 @@ def build_color_model(clips):
 
 # ---------------------------------------------------------------- 跟踪与输出
 def track_clip(cc, w):
+    """在 30 帧的候选上做全局选择（Viterbi），每帧选一个框，返回长度 30 的候选列表。
+    一元代价：关键帧为 anchor_w × feat·w；其余帧只用距离、类别、颜色三项（other_w × 对应的权重与特征）。
+    二元代价（pair_cost）：相邻帧两框 IoU ≥ --stay_iou 时为 iou_w × (1 - IoU)，否则视为换车，记固定代价 --switch_cost；
+    --dir_w > 0 时再加相邻帧 3D 位移方向与文本航向不一致的代价。
+    有任何一帧没有候选时退化为逐帧贪心，空帧沿用上一帧的选择。"""
     frames = cc["frames"]
     unary = []
     for fi, cands in enumerate(frames):
@@ -752,6 +816,7 @@ def track_clip(cc, w):
     heading = cc.get("heading")
 
     def pair_cost(p, c):
+        """相邻帧候选 p → c 的转移代价（定义见 track_clip）。"""
         iou = iou2d(p["box"], c["box"])
         cost = args.iou_w * (1 - iou) if iou >= args.stay_iou else args.switch_cost
         if args.dir_w > 0 and heading is not None:
@@ -790,6 +855,7 @@ def track_clip(cc, w):
 
 
 def oracle_track(clip, cc):
+    """诊断用（--oracle 1）：每帧直接取 GT 对应的检测框作为选择结果，用来度量三维定位本身的上限；需要 TRAIN 标签。"""
     track = []
     for fi in range(30):
         b = gt_box(clip, fi)
@@ -855,6 +921,9 @@ def frame_center(cc, cd, fi):
 
 
 def ray_frame_center(cc, cd, fi):
+    """射线法单帧中心（v11 及以前的定位方式，也是 boxfit 不适用时的兜底）：
+    水平位置取框中心视线与文本距离圆柱的交点（失败时用与地平面的交点）；
+    高度按 --zray_w / --zsrc 在射线交点高度与“地平面 + h/2”之间取值；--trunc_z 时上下被截断的框直接用地平面高度。"""
     lwh, plane, rc = cc["lwh"], cc["plane"], cc["rc"]
     p = on_range(cd["o"], cd["d"], rc[fi]) if rc is not None else None
     if p is None:
@@ -875,10 +944,12 @@ SEQ_BIAS, CAM_BIAS = {}, {}
 
 
 def cam_key(img):
+    """相机标识：外参平移取到 0.1 m（同一相机的平移相同），用于 --bias_level cam。"""
     return tuple(np.round(load_calib(img)["t"], 1))
 
 
 def lateral_unit(p):
+    """水平面内与视线（原点 → p）垂直的单位向量（视线方向逆时针转 90°），用于把误差分解成横向分量。"""
     r = math.hypot(p[0], p[1])
     return np.array([-p[1] / r, p[0] / r]) if r > 1e-6 else np.array([0.0, 1.0])
 
@@ -931,6 +1002,10 @@ def fit_center_bias(pairs):
 
 
 def to_output(cc, track, _second=False):
+    """把选择结果转成 (30, 6) 的输出，每行 l w h x y z：尺寸用文本值；中心逐帧由 frame_center 估计（--seq_bias 时减去系统偏差）。
+    没有选中框的帧沿用上一帧的框；开头几帧就没有时，中心取 x = 文本距离（没有时 30 m）、y = 0、z = 地平面常数项 + h/2；
+    --zmode median 时高度取整段中位数；再按 --smooth 做时序平滑（state_lin：停车目标取 30 帧中位数，
+    运动目标保持文本距离、只对方位角做局部线性平滑）。--yaw_motion 时用第一遍轨迹的运动方向作航向再算一遍（_second 防止递归）。"""
     out = np.zeros((30, 6))
     lwh, plane, rc = cc["lwh"], cc["plane"], cc["rc"]
     last = None
@@ -985,6 +1060,8 @@ def to_output(cc, track, _second=False):
 
 # ---------------------------------------------------------------- 划分
 def make_split(train_all):
+    """按 --mode 划分（拟合片段, 评估片段）：cv=按目标 (seq, track) 随机分 --nfold 折，第 --fold 折作评估；
+    val=按 val.txt；seen=每个 sequence 内每 3 段留 1 段评估（--seen_split track 时按目标分组留出）；test=全部 TRAIN 拟合、TEST 推理。"""
     if args.mode == "val":
         val_ids = set(read_ids("val"))
         return [c for c in train_all if c["vid"] not in val_ids], [c for c in train_all if c["vid"] in val_ids]
@@ -1043,6 +1120,8 @@ def load_params(path):
 
 
 def save_params(path, fit, n_samples, planes, offset, bb, w):
+    """把在 TRAIN 上拟合的全部参数（打分器权重、各 sequence 地平面、框中心偏移、boxfit 各边偏置与噪声）
+    和影响结果的配置项写成 json，供 --load_params 在没有 TRAIN 标签时直接复现 test 输出。"""
     P = {"method": "Tenn-VLSOT-Geo（望远队，2026 VLP 挑战赛赛道 A）",
          "note": "全部参数只用 TRAIN 标签拟合；用法：pipeline3.py --mode test <同一配置> --load_params 本文件",
          "n_fit_clips": len(fit), "n_scorer_samples": n_samples,
@@ -1059,6 +1138,9 @@ def save_params(path, fit, n_samples, planes, offset, bb, w):
 
 
 def main():
+    """入口。--load_params 时直接读取参数做 test 推理；否则在拟合片段上依次拟合地平面、框中心偏移、boxfit 各边噪声、
+    打分器权重（test 模式下，与测试目标同一 (seq, track) 的 TRAIN 片段不参与地面偏移估计；knn 颜色模型时还要构建 ColorKNN），
+    最后交给 run_eval。"""
     if args.load_params:
         if args.mode != "test":
             raise SystemExit("--load_params 只用于 --mode test")

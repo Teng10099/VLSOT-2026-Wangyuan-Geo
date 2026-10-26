@@ -28,6 +28,7 @@ args = parser.parse_args()
 
 
 def iou_matrix(a, b):
+    """两组 2D 框 (x1, y1, x2, y2, ...) 两两之间的 IoU 矩阵，形状 (len(a), len(b))。"""
     a, b = np.asarray(a, dtype=np.float64)[:, :4], np.asarray(b, dtype=np.float64)[:, :4]
     lt = np.maximum(a[:, None, :2], b[None, :, :2])
     rb = np.minimum(a[:, None, 2:], b[None, :, 2:])
@@ -56,10 +57,13 @@ def match(a, b, min_iou=0.5):
 
 
 def pct(v, q):
+    """v 的第 q 百分位数；v 为空时返回 NaN。"""
     return float(np.percentile(v, q)) if len(v) else float("nan")
 
 
 def cmp_dets(A, B):
+    """比较两份检测缓存（图像键 → 框列表）：同类别框按 IoU ≥ 0.5 贪心一一匹配，
+    统计逐图完全相同的数量、匹配数、未匹配的高置信度（≥ 0.25）框、匹配框的 IoU、坐标差与置信度差。"""
     keys = sorted(k for k in set(A) & set(B) if k.startswith(args.prefix))
     ious, dxy, dconf, n_a, n_b, n_m, un_a25, un_b25, exact = [], [], [], 0, 0, 0, 0, 0, 0
     for k in keys:
@@ -86,6 +90,8 @@ def cmp_dets(A, B):
 
 
 def cmp_efn(PA, PB, DA, DB):
+    """比较两份 EFN 颜色概率：DB 为 None 时按框序号一一对应，否则先按 IoU ≥ 0.9 匹配两份检测框；
+    跳过含 NaN 的框，统计最可能颜色一致的个数与概率的最大绝对差。"""
     keys = sorted(k for k in set(PA) & set(PB) if k.startswith(args.prefix))
     diffs, agree, n = [], 0, 0
     for k in keys:
@@ -107,6 +113,8 @@ def cmp_efn(PA, PB, DA, DB):
 
 
 def cmp_results(a, b):
+    """比较两次 test 输出目录：每个 result/<vid>.txt 是否逐字节相同、l w h 与 x y z 的最大差、
+    中心平均距离，以及两次逐帧选中框的最小 IoU。"""
     ta = json.load(open(f"{a}/tracks.json"))
     tb = json.load(open(f"{b}/tracks.json"))
     rows, same_bytes = [], 0

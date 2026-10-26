@@ -8,6 +8,7 @@ import numpy as np
 
 
 def iou(p, g):
+    """逐帧的正常 3D IoU：p、g 为 (N, 6) 的 l w h x y z 数组。"""
     lo_p, hi_p = p[:, 3:] - p[:, :3] / 2, p[:, 3:] + p[:, :3] / 2
     lo_g, hi_g = g[:, 3:] - g[:, :3] / 2, g[:, 3:] + g[:, :3] / 2
     inter = np.clip(np.minimum(hi_p, hi_g) - np.maximum(lo_p, lo_g), 0, None).prod(1)
@@ -45,6 +46,7 @@ print(f"   if lwh exact: SR@0.5 {100 * (iou(Q, G) > 0.5).mean():5.1f}")
 
 
 def group(name, keyf, bins):
+    """把选对目标的片段按 keyf 的取值分箱，逐箱打印 SR@0.5、SR@0.7、各轴平均误差与 ACE。"""
     print(f"by {name}:")
     for lo, hi in bins:
         rows = [r for r in ok if lo <= keyf(r) < hi]

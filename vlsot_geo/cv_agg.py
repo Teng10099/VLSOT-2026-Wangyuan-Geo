@@ -22,6 +22,7 @@ gt = {v: np.array(x["gt"]) for v, x in d.items()}
 
 
 def trunc(x):
+    """该片段是否有某一帧的 GT 对应检测框贴图像边界（4 像素以内），用于 trunc 分组。"""
     return any(b is not None and (b[0] < 4 or b[1] < 4 or b[2] > 1916 or b[3] > 1076) for b in x["gtbox"])
 
 

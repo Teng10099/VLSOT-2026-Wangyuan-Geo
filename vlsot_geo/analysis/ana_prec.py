@@ -14,6 +14,7 @@ for p in sorted(glob.glob(sys.argv[1])):
 
 
 def iou(p, g):
+    """逐帧的正常 3D IoU：p、g 为 (30, 6) 的 l w h x y z 数组。"""
     lo = np.maximum(p[:, 3:] - p[:, :3] / 2, g[:, 3:] - g[:, :3] / 2)
     hi = np.minimum(p[:, 3:] + p[:, :3] / 2, g[:, 3:] + g[:, :3] / 2)
     inter = np.clip(hi - lo, 0, None).prod(1)
