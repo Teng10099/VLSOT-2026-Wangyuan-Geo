@@ -12,7 +12,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt
 
-from report_data import ABLATION, CEILING, FACTS, LEADERBOARD, METHOD, PLATFORM, REJECTED, TEAM, WEIGHTS
+from report_data import ABLATION, CEILING, FACTS, LB_DATE, LEADERBOARD, METHOD, PLATFORM, REJECTED, TEAM, WEIGHTS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIG = os.path.join(HERE, "figs")
@@ -311,7 +311,7 @@ def main():
     w.p([("VLP 平台用户名：", True), (priv["vlp_user"], False), ("；方法名称：", True),
          (f"{METHOD['short']}（{METHOD['long']}），方法页 {METHOD['url']}。以下成绩为 2026 年 10 月 24 日 16:30"
           "（平台显示时间）提交的 v12f 版本。", False)])
-    w.fig("fig_leaderboard.png", 14.6, "VLP 平台 VLSOT 赛道排行榜（2026 年 10 月 25 日截图，按 SR@0.5 排序，红框为本队）")
+    w.fig("fig_leaderboard.png", 14.6, f"VLP 平台 VLSOT 赛道排行榜（{LB_DATE[1]}截图，按 SR@0.5 排序，红框为本队）")
     rows = [["", *names[:4], "ACE/m", "PR@0.5"],
             ["本方法（v12f）", *[n(ours[2 + k], 4 if names[k] == "ACE" else 2) for k in range(6)]],
             [f"排名（SR@0.5>0 的 {len(scored)} 个方法）", *[str(x) for x in rank]],

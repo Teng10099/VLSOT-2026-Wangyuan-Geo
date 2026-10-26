@@ -13,7 +13,7 @@ from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE, PP_ALIGN
 from pptx.oxml.ns import qn
 from pptx.util import Inches, Pt
 
-from report_data import ABLATION, CEILING, METHOD, PLATFORM, TEAM, WEIGHTS
+from report_data import ABLATION, CEILING, LB_DATE, METHOD, PLATFORM, TEAM, WEIGHTS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIG = os.path.join(HERE, "figs")
@@ -133,7 +133,7 @@ notes(s, "任务：输入 30 帧单目图像、英文目标描述与相机标定
          "数据：TRAIN 227 段 / TEST 10 段，每段 30 帧。"
          f"代码 {METHOD['repo']}；权重 {WEIGHTS['url']}（提取码 {WEIGHTS['code']}）。"
          "官方数据包不含标定，我们使用源数据集 V2X-Seq-SPD 路侧端公开的标定文件，只读内参与外参，不读其中任何标注。"
-         "平台成绩取自方法页 http://vlp.chd.edu.cn/tasks/method/301 的 2026-10-24 16:30 提交；排名取自 2026-10-25 抓取的排行榜，"
+         f"平台成绩取自方法页 http://vlp.chd.edu.cn/tasks/method/301 的 2026-10-24 16:30 提交；排名取自 {LB_DATE[0]} 抓取的排行榜，"
          "按 SR@0.5 排序第 3（18 个方法中 14 个有成绩）；ACE 在 SR@0.5 大于 0 的 10 个方法中最低。"
          "交叉验证为 227 段 TRAIN 按目标 (sequence, track) 分组的 5 折，指标与平台一致（真实 3D IoU、中心欧氏误差）。")
 

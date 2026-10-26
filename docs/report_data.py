@@ -7,8 +7,9 @@ TEAM = {
     "school": "数据科学与人工智能研究院",
     "members": "滕恒基、梁天宇、苗富敬、刘帅、安子茜",
     "advisor": "孙士杰",
-    "date": "2026 年 10 月 25 日",
+    "date": "2026 年 10 月 26 日",
 }
+LB_DATE = ("2026-10-26", "2026 年 10 月 26 日")  # 排行榜截图的抓取日期（数字与 10-25 相同，本队行多了 Open Source 标记）
 METHOD = {
     "short": "Tenn-VLSOT-Geo",
     "long": "Wangyuan Language-Guided Geometric 3D Tracking (Text Range + Roadside Back-projection)",
@@ -45,7 +46,7 @@ ABLATION = [
     ("+ boxfit（全部帧）", 87.78, 68.66, 70.35, 0.496, 36.98, 12.54),
     ("+ 二次距离插值、高度先验放宽（v12f）", 88.41, 69.16, 70.57, 0.498, 38.63, 12.69),
 ]
-# 排行榜（2026-10-25 抓取 http://vlp.chd.edu.cn/tasks/1；按 SR@0.5 排序，18 个方法中 14 个有成绩）
+# 排行榜（2026-10-25、10-26 两次抓取 http://vlp.chd.edu.cn/tasks/1，数字相同；按 SR@0.5 排序，18 个方法中 14 个有成绩）
 LEADERBOARD_RANK = {"SR@0.5": "3 / 14", "ACE": "SR@0.5>0 的 10 个方法中最低"}
 # (方法, 方法号, SR@0.5, SR@0.7, AOR, PR@1.0, ACE, PR@0.5, 最后提交)；另有 4 个方法无成绩（193、216、240、241）
 LEADERBOARD = [
