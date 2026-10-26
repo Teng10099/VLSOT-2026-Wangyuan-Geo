@@ -13,7 +13,7 @@ from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE, PP_ALIGN
 from pptx.oxml.ns import qn
 from pptx.util import Inches, Pt
 
-from report_data import ABLATION, CEILING, LB_DATE, METHOD, PLATFORM, TEAM, WEIGHTS
+from report_data import ABLATION, CEILING, GAP, LB_DATE, METHOD, PLATFORM, TEAM, WEIGHTS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIG = os.path.join(HERE, "figs")
@@ -295,11 +295,19 @@ text(s, 0.78, 5.27, 5.7, 1.6, [
     ("· 运动目标中间帧距离只能插值：一半帧径向误差 >0.1 m", 11.5, False, INK)], spacing=1.0)
 box(s, 6.73, 5.2, 6.0, 1.7, fill=CARD2, edge=LINE)
 text(s, 6.91, 5.27, 5.7, 1.6, [
-    ("局限与下一步", 14, True, TEAL),
-    ("· 测试集难例集中：两个左下角截断的近处目标（约 15 m）、两个约 100 m 远的运动目标", 11.5, False, INK),
-    ("· CV 88.4 与平台 61.7 的差距推测主要来自这些难例（近处截断片段在 TRAIN 中只有 19 / 227 段）；平台不给逐段成绩，无法逐段核实", 11.5, False, INK),
-    ("· 计划：检测框测试时增强精修框边、远处目标亚像素定位、整段轨迹联合优化", 11.5, False, INK)], spacing=1.0)
+    ("CV 88.4 与平台 61.7 的差距：主要在朝向", 14, True, TEAL),
+    (f"· 提交格式没有朝向。测试集 3 段斜向行驶（航向 {GAP['oblique'][0][1]}°、{GAP['oblique'][1][1]}°、{GAP['oblique'][2][1]}°），"
+     f"若按真值朝向算 IoU，定位完全正确时上限也只有 {GAP['oblique'][0][2]:.2f} / {GAP['oblique'][1][2]:.2f} / {GAP['oblique'][2][2]:.2f}",
+     11.5, False, INK),
+    (f"· 其余 7 段 {GAP['frames'][1]} 帧中 {GAP['frames'][0]} 帧达标（{GAP['frames'][2]:.1f}%），与 CV 一致；误差移植模拟："
+     f"轴对齐预期 {GAP['sim_A'][0][0]:.0f}，按真值朝向预期 {GAP['sim_B'][0][0]:.1f}", 11.5, False, INK),
+    ("· 下一步：输出与朝向匹配的框；截断框边精修、远处目标亚像素定位", 11.5, False, INK)], spacing=1.0)
 notes(s, "图为测试集片段的检查图（只用测试图像、文本和我们的预测，不含任何测试标签）。"
+         f"差距分析见 vlsot_geo/analysis/ana_gap.py（只用 TRAIN 标签与测试集公开描述）：从 227 段随机抽 10 段，平均 SR@0.5 ≤ 61.67 的概率 "
+         f"{GAP['p_random10']}%；按测试集情形构成加权预期 {GAP['mix_est']:.2f}，所以难例不能解释差距。"
+         f"误差移植模拟（5000 次）：轴对齐口径预期 SR@0.5 {GAP['sim_A'][0][0]:.1f}（90% 区间 {GAP['sim_A'][0][1]:.1f}~{GAP['sim_A'][0][2]:.1f}）；"
+         f"真值按航向旋转的口径预期 SR@0.5 / SR@0.7 / AOR 为 {GAP['sim_B'][0][0]:.1f} / {GAP['sim_B'][1][0]:.1f} / {GAP['sim_B'][2][0]:.1f}，"
+         f"平台 61.67 / 38.33 / 57.84；ACE 预期 {GAP['sim_B'][3][0]:.2f} m，平台 0.226 m。平台未公开评测代码，以上是推断。"
          "误差上限由 ana_jitter.py 统计（TRAIN 中有三处距离且与 GT 相差 0.3 m 以内的片段）：停车目标看 GT 中心相对片段中位数的偏差；"
          "尺寸上限为预测中心等于 GT、尺寸用文本值时的 IoU 分布。"
          "平台不提供逐段成绩，因此没有针对单个测试片段调参。")

@@ -12,7 +12,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt
 
-from report_data import ABLATION, CEILING, FACTS, LB_DATE, LEADERBOARD, METHOD, PLATFORM, REJECTED, TEAM, WEIGHTS
+from report_data import ABLATION, CEILING, FACTS, GAP, LB_DATE, LEADERBOARD, METHOD, PLATFORM, REJECTED, TEAM, WEIGHTS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIG = os.path.join(HERE, "figs")
@@ -335,7 +335,7 @@ def main():
     analysis = (f"赛道名称为专项命题挑战赛道A（VLSOT），当前排名{rank14}/{len(LEADERBOARD)}（按SR@0.5）。"
                 f"核心优势指标为ACE（平均中心误差），得分{ours[6]:.4f} m，在SR@0.5大于0的{len(scored)}个方法中最低，"
                 f"比次低的{second_ace[0]}（{second_ace[6]:.4f} m）低{ace_gain:.0f}%；SR@0.5为{ours[2]:.2f}，高于均值{mean[0]:.2f}。"
-                f"SR@0.7（{ours[3]:.2f}，第{rank[1]}）和AOR（{ours[4]:.2f}，第{rank[2]}）是短板，高IoU阈值对中心和尺寸的小误差更敏感。"
+                f"SR@0.7（{ours[3]:.2f}，第{rank[1]}）和AOR（{ours[4]:.2f}，第{rank[2]}）是短板，主要受3段斜向行驶目标影响（见第三部分）。"
                 f"PR@1.0/PR@0.5的阈值为0.1 m/0.05 m（若为1 m，由ACE可推出PR@1.0不低于{markov:.0f}%），"
                 f"本方法为{ours[5]:.2f}/{ours[7]:.2f}；2025年基线条目的PR可能按1 m/0.5 m计算，不宜直接比较。")
     w.p(analysis)
@@ -493,13 +493,47 @@ def main():
         f"{CEILING['parked_sr07_cap'] * 100:.1f}%（停车）和 {CEILING['moving_sr07_cap'] * 100:.1f}%（运动），AOR 上限约为 "
         f"{CEILING['parked_aor_cap'] * 100:.1f} 和 {CEILING['moving_aor_cap'] * 100:.1f}。运动目标中间帧的距离只能由三处文本距离插值，"
         f"约 {CEILING['moving_radial_frac_lt10cm'] * 100:.0f}% 的帧径向误差超过 0.1 m。")
-    w.p(f"交叉验证 {ABLATION[-1][1]:.2f} 与平台 {PLATFORM[-1][3]:.2f} 相差较大。测试集 10 段中，001483 和 003235 是 15 m 左右、位于左下角的截断目标，"
-        f"024386 是 61.5 m 处起始截断的运动目标，047771 和 051657 是约 100 m 远的运动目标（这些信息都来自测试描述）；"
-        f"而距离 20 m 以内的截断片段在 TRAIN 中只有 {FACTS['near_trunc_clips']}/227 段。我们推测差距主要来自这些训练集中少见的情形，"
-        f"但平台不返回逐段成绩，无法逐段核实。")
     rows = [["改动", "交叉验证结果（相对 v12f 88.41）"]] + [[a_, b_] for a_, b_ in REJECTED]
     w.table(rows, [8.2, 6.4], "v12f 之后试过但未采用的改动", size=10, left_cols=(0, 1))
     w.p("这些改动在交叉验证上都没有可信的提升，因此都没有提交。")
+
+    w.h2("（五）交叉验证与平台成绩的差距")
+    ob = GAP["oblique"]
+    w.p(f"交叉验证 SR@0.5 为 {ABLATION[-1][1]:.2f}，平台为 {PLATFORM[-1][3]:.2f}，相差较大。我们用交叉验证的逐段结果做了分析"
+        "（vlsot_geo/analysis/ana_gap.py，只用 TRAIN 标签、测试集的公开描述和我们自己的预测）。")
+    w.p([("差距不能用“测试集小”或“难例多”解释。", True),
+         (f"从 227 段中随机抽 10 段，平均 SR@0.5 不高于 {PLATFORM[-1][3]:.2f} 的概率只有 {GAP['p_random10']}%。"
+          f"测试集中有 2 段近处截断、3 段薄框、1 段约 100 m 远的目标，按这一构成对交叉验证结果加权，预期 SR@0.5 仍为 {GAP['mix_est']:.2f}；"
+          f"其中最难的近处截断类在 TRAIN 上也有 {GAP['near_trunc_cv']:.2f}。", False)])
+    w.p([("更可能的原因是朝向。", True),
+         (f"提交格式只有 l、w、h、x、y、z，没有朝向；TRAIN 标签也没有朝向，所以我们输出的框长边沿 x 轴，交叉验证也按轴对齐框计算 IoU。"
+          f"测试集中 {ob[0][0]}、{ob[1][0]}、{ob[2][0]} 三段车辆斜向或横向行驶，文本航向为 {ob[0][1]}°、{ob[1][1]}°、{ob[2][1]}°；"
+          f"TRAIN 中航向偏离 0°/180° 超过 20° 的片段只占 {GAP['train_oblique_pct']}%。若平台按真值的实际朝向计算 IoU，"
+          f"这三段即使中心和尺寸完全正确，IoU 上限也只有 {ob[0][2]:.2f}、{ob[1][2]:.2f}、{ob[2][2]:.2f}，所有帧都达不到 0.5。"
+          f"此时平台的 {GAP['frames'][0]} 个达标帧全部来自其余 7 段的 {GAP['frames'][1]} 帧，达标率 {GAP['frames'][2]:.1f}%，"
+          f"与交叉验证的 {ABLATION[-1][1]:.2f} 一致。", False)])
+    sa, sb = GAP["sim_A"], GAP["sim_B"]
+    tab_no = COUNT["tab"] + 1
+    w.p([("误差移植模拟。", True),
+         (f"每个测试段从同类（情形与停/动相同）的 TRAIN 片段中随机取一段的逐帧误差和尺寸比例，加到我们提交的预测上构造模拟真值，"
+          f"重复 5000 次，分别按两种口径计算 6 项指标（表 {tab_no}）。按轴对齐口径，预期 SR@0.5 为 {sa[0][0]:.1f}，"
+          f"平台的 {PLATFORM[-1][3]:.2f} 落在 90% 区间之外；按真值朝向的口径，预期 SR@0.5、SR@0.7、AOR 为 "
+          f"{sb[0][0]:.1f}、{sb[1][0]:.1f}、{sb[2][0]:.1f}，与平台的 {PLATFORM[-1][3]:.2f}、{PLATFORM[-1][4]:.2f}、"
+          f"{PLATFORM[-1][5]:.2f} 吻合。与朝向无关的 ACE 也吻合（预期 {sb[3][0]:.2f} m，平台 {PLATFORM[-1][7]:.3f} m）："
+          f"交叉验证中选对目标的 {GAP['sel_ok'][0]} 段 ACE 为 {GAP['sel_ok'][2]:.3f} m，没选对的 {GAP['sel_bad'][0]} 段为 "
+          f"{GAP['sel_bad'][2]:.2f} m，说明测试集上目标基本选对、中心也准，丢分主要出在框的朝向表示上。", False)])
+    fmt_c = lambda v, k: f"{v[0]:.3f}\n({v[1]:.2f}~{v[2]:.2f})" if k == 3 else f"{v[0]:.1f}\n({v[1]:.1f}~{v[2]:.1f})"  # noqa: E731
+    pf = PLATFORM[-1]
+    rows = [["口径", "SR@0.5", "SR@0.7", "AOR", "ACE/m", "PR@1.0", "PR@0.5"],
+            ["平台实际", n(pf[3]), n(pf[4]), n(pf[5]), n(pf[7], 3), n(pf[6]), n(pf[8])],
+            ["A 轴对齐 IoU\n（交叉验证口径）", *[fmt_c(v, k) for k, v in enumerate(sa)]],
+            ["B 真值按航向旋转，\n提交框朝向为 0", *[fmt_c(v, k) for k, v in enumerate(sb)]]]
+    w.table(rows, [3.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8],
+            "交叉验证误差移植到测试集预测上的期望指标（中位数，括号内为 90% 区间；PR 阈值 0.1 m / 0.05 m）",
+            highlight=(1,), size=9.5)
+    w.p(f"两点说明。第一，平台不公开评测代码，也不返回逐段成绩，以上是根据数据的推断，未经平台确认；若 TRAIN 的真值也按文本航向旋转，"
+        f"交叉验证 SR@0.5 会从 {ABLATION[-1][1]:.2f} 降到 {GAP['cv_rot_sr']:.2f}（TRAIN 中斜向目标少，影响较小）。"
+        f"第二，PR@1.0 的预期约为 {sb[4][0]:.0f}，平台只有 {pf[6]:.2f}，这一差距与朝向无关，原因尚不清楚。")
 
     # ================================================================ 四、结论
     w = Writer(doc, None)
@@ -511,13 +545,15 @@ def main():
           "统计标注抖动后可知 PR 指标的提升空间有限，v12f 之后的 8 项尝试都没有可信提升，因此没有再提交。", False)])
     w.p([("项目评价。", True),
          (f"本方法 SR@0.5 排名 {rank14}/{len(LEADERBOARD)}，ACE 为 SR@0.5>0 的方法中最低，完成了从文本解析、检测、目标选择、三维定位到生成提交文件的"
-          "完整流程，可由检测、颜色缓存和 run_final.sh 三步复现。不足在于 SR@0.7 和 PR 偏低，我们推测近处截断目标和约 100 m 远的小目标"
-          "仍是主要失分点；方法依赖描述中的度量信息，描述缺少距离时只能退回地平面射线交点。", False)])
+          "完整流程，可由检测、颜色缓存和 run_final.sh 三步复现。不足主要在框的朝向：提交格式没有朝向，我们的框长边沿 x 轴，"
+          "测试集中 3 段斜向行驶的目标即使定位准确，若平台按真值朝向计算 IoU 也无法达标，这很可能是平台 SR@0.5、SR@0.7 明显低于"
+          "交叉验证的主要原因；此外 PR 偏低，近处截断目标仍有失分；方法依赖描述中的度量信息，描述缺少距离时只能退回地平面射线交点。", False)])
     w.p([("改进建议。", True),
-         ("（1）检测框精修：boxfit 对框边位置敏感，可用测试时增强（翻转、多尺度）或实例分割细化框边；"
-          "（2）远处目标：对 100 m 外的目标做高分辨率裁剪后再检测，或做亚像素框边估计；"
-          "（3）整段联合优化：把 30 帧的 boxfit 代价与运动模型放在同一个优化问题中，代替逐帧拟合后再平滑；"
-          "（4）尺寸修正：标注尺寸逐帧变化限制了 SR@0.7，可在更多数据上学习从文本尺寸到标注尺寸的修正。", False)])
+         ("（1）朝向：根据文本航向输出与朝向匹配的框，例如斜向目标按实际占地范围给出 x、y 方向的尺寸，格式允许时直接提交朝向；"
+          "（2）检测框精修：boxfit 对框边位置敏感，可用测试时增强（翻转、多尺度）或实例分割细化框边；"
+          "（3）远处目标：对 100 m 外的目标做高分辨率裁剪后再检测，或做亚像素框边估计；"
+          "（4）整段联合优化：把 30 帧的 boxfit 代价与运动模型放在同一个优化问题中，代替逐帧拟合后再平滑；"
+          "（5）尺寸修正：标注尺寸逐帧变化限制了 SR@0.7，可在更多数据上学习从文本尺寸到标注尺寸的修正。", False)])
 
     doc.save(out_path)
     print("saved", out_path, "tables", len(doc.tables))
